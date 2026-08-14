@@ -44,32 +44,72 @@ LECCIONES APRENDIDAS:
 - La perdida ya existe aunque no se venda
 - Diferencia caida estructural de caida temporal
 
-Responde siempre en español, conciso y directo. Usa emojis (✅ ❌ ⚠️ 📊 💰).
-Siempre termina con veredicto: NO ENTRAR / MEDIA FICHA ($5K) / FICHA COMPLETA ($10K).`;
+REGLAS DE ANALISIS:
+- Cuando el usuario pida analizar una accion, usa la busqueda web para obtener datos actuales.
+- Busca informacion suficiente para evaluar los 3 filtros.
+- No inventes datos.
+- Si un dato no esta disponible, indicarlo claramente.
+- Responde siempre en español, conciso y directo.
+- Usa emojis (✅ ❌ ⚠️ 📊 💰).
+- Siempre termina con un veredicto:
+NO ENTRAR / MEDIA FICHA ($5K) / FICHA COMPLETA ($10K).`;
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   const { messages } = req.body;
-  if (!messages || !Array.isArray(messages)) return res.status(400).json({ error: 'Invalid messages' });
+
+  if (!messages || !Array.isArray(messages)) {
+    return res.status(400).json({ error: 'Invalid messages' });
+  }
+
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: 'claude-sonnet-5', max_tokens: 1500, system: SYSTEM_PROMPT, tools: [{ type: 'web_search_20250305', name: 'web_search' }], messages }),
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-5',
+        max_tokens: 1500,
+        system: SYSTEM_PROMPT,
+        tools: [
+          {
+            type: 'web_search_20250305',
+            name: 'web_search',
+            max_uses: 5
+          }
+        ],
+        messages
+      })
     });
+
     const data = await response.json();
-    if (!response.ok) return res.status(response.status).json({ error: data.error?.message || 'API error' });
-    if (data.stop_reason === 'tool_use') {
-      const followUp = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1500, system: SYSTEM_PROMPT, tools: [{ type: 'web_search_20250305', name: 'web_search' }], messages: [...messages, { role: 'assistant', content: data.content }, { role: 'user', content: data.content.filter(b => b.type === 'tool_use').map(b => ({ type: 'tool_result', tool_use_id: b.id, content: 'Busqueda completada.' })) }] }),
+
+    if (!response.ok) {
+      return res.status(response.status).json({
+        error: data.error?.message || 'API error'
       });
-      const fd = await followUp.json();
-      return res.status(200).json({ content: fd.content?.filter(b => b.type === 'text').map(b => b.text).join('') || 'Sin respuesta.' });
     }
-    return res.status(200).json({ content: data.content?.filter(b => b.type === 'text').map(b => b.text).join('') || 'Sin respuesta.' });
+
+    const content = data.content
+      ?.filter(block => block.type === 'text')
+      .map(block => block.text)
+      .join('') || 'Sin respuesta.';
+
+    return res.status(200).json({
+      content
+    });
+
   } catch (error) {
-    return res.status(500).json({ error: 'Error interno' });
+    console.error(error);
+
+    return res.status(500).json({
+      error: 'Error interno'
+    });
   }
 }
