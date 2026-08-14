@@ -45,71 +45,137 @@ LECCIONES APRENDIDAS:
 - Diferencia caida estructural de caida temporal
 
 REGLAS DE ANALISIS:
-- Cuando el usuario pida analizar una accion, usa la busqueda web para obtener datos actuales.
+- Cuando Seba pida analizar una accion, usa la busqueda web para obtener datos actuales.
 - Busca informacion suficiente para evaluar los 3 filtros.
 - No inventes datos.
 - Si un dato no esta disponible, indicarlo claramente.
+- Analiza siempre Fundamental, Tecnico y Koncorde/Flujo.
+- Explica claramente que filtros estan alineados y cuales no.
 - Responde siempre en español, conciso y directo.
-- Usa emojis (✅ ❌ ⚠️ 📊 💰).
-- Siempre termina con un veredicto:
-NO ENTRAR / MEDIA FICHA ($5K) / FICHA COMPLETA ($10K).`;
+- Usa emojis: ✅ ❌ ⚠️ 📊 💰.
+- Siempre termina con uno de estos veredictos exactos:
+
+NO ENTRAR
+MEDIA FICHA ($5K)
+FICHA COMPLETA ($10K)`;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({
+      error: 'Method not allowed'
+    });
   }
 
   const { messages } = req.body;
 
   if (!messages || !Array.isArray(messages)) {
-    return res.status(400).json({ error: 'Invalid messages' });
+    return res.status(400).json({
+      error: 'Invalid messages'
+    });
   }
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-5',
-        max_tokens: 1500,
-        system: SYSTEM_PROMPT,
-        tools: [
-          {
-            type: 'web_search_20250305',
-            name: 'web_search',
-            max_uses: 5
-          }
-        ],
-        messages
-      })
-    });
+    const tools = [
+      {
+        type: 'web_search_20250305',
+        name: 'web_search',
+        max_uses: 5
+      }
+    ];
 
-    const data = await response.json();
+    let currentMessages = messages;
+    let data = null;
 
-    if (!response.ok) {
-      return res.status(response.status).json({
-        error: data.error?.message || 'API error'
-      });
+    // Permitimos algunas continuaciones por si Claude pausa
+    // mientras realiza búsquedas web.
+    for (let attempt = 0; attempt < 3; attempt++) {
+
+      const response = await fetch(
+        'https://api.anthropic.com/v1/messages',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': process.env.ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01'
+          },
+          body: JSON.stringify({
+            model: 'claude-sonnet-5',
+            max_tokens: 1500,
+            system: SYSTEM_PROMPT,
+            tools,
+            messages: currentMessages
+          })
+        }
+      );
+
+      data = await response.json();
+
+      if (!response.ok) {
+        console.error('ANTHROPIC ERROR:', JSON.stringify(data));
+
+        return res.status(response.status).json({
+          error: data.error?.message || 'API error'
+        });
+      }
+
+      // Si Claude terminó normalmente, salimos.
+      if (data.stop_reason !== 'pause_turn') {
+        break;
+      }
+
+      // Si Anthropic pausó una búsqueda, continuamos
+      // pasando la respuesta anterior tal cual.
+      currentMessages = [
+        ...currentMessages,
+        {
+          role: 'assistant',
+          content: data.content
+        }
+      ];
     }
 
-    const content = data.content
+    console.log(
+      'ANTHROPIC STOP REASON:',
+      data?.stop_reason
+    );
+
+    console.log(
+      'ANTHROPIC CONTENT:',
+      JSON.stringify(data?.content)
+    );
+
+    const content = data?.content
       ?.filter(block => block.type === 'text')
-      .map(block => block.text)
-      .join('') || 'Sin respuesta.';
+      ?.map(block => block.text)
+      ?.join('')
+      ?.trim();
+
+    if (!content) {
+      return res.status(200).json({
+        content: '⚠️ Claude no devolvió texto. Revisemos los logs de Vercel.',
+        debug: {
+          stop_reason: data?.stop_reason,
+          content_types: data?.content?.map(
+            block => block.type
+          )
+        }
+      });
+    }
 
     return res.status(200).json({
       content
     });
 
   } catch (error) {
-    console.error(error);
+
+    console.error(
+      'INTERNAL ERROR:',
+      error
+    );
 
     return res.status(500).json({
-      error: 'Error interno'
+      error: error.message || 'Error interno'
     });
   }
 }
