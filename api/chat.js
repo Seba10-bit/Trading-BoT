@@ -25,11 +25,6 @@ Filtro 3 - KONCORDE/FLUJO:
 - Manos grandes comprando (institucionales) positivo
 - Sin presion vendedora dominante positivo
  
-REGLA DE TAMANO DE POSICION:
-- 3 filtros alineados: ficha completa ($10K)
-- 2 filtros: media ficha ($5K)
-- 1 filtro o menos: NO entras
- 
 SALIDA CON GANANCIA:
 - Alerta en +15%
 - Si tesis intacta dejar correr hasta +25-30%
@@ -75,19 +70,53 @@ historico, Institutional Ownership de 88% pero con reduccion de 167 a 145
 hedge funds con posicion en los ultimos tres trimestres y ventas netas
 institucionales significativas.
  
-FUNDAMENTAL: verde - negocio solido, valoracion descontada respecto al
-historico.
+FUNDAMENTAL: rojo - negocio solido, valoracion descontada respecto al
+historico, pero con senales de desaceleracion.
 TECNICO: rojo - sobreventa presente, pero sin confirmacion de que la
 tendencia bajista termino. No cumple el criterio de alineacion tecnica.
 FLUJO: rojo - el Institutional Ownership alto es una fotografia del
 pasado. El flujo neto reciente muestra salida sostenida de hedge funds.
  
-1/3 filtros alineados.
- 
-NO ENTRAR
- 
 "Esta barata" no significa "toco piso". La caida se premia solo cuando
 hay evidencia de que termino, no por su magnitud.
+ 
+FORMATO DE RESPUESTA (obligatorio, sin excepciones):
+ 
+Nunca uses la palabra "Veredicto", "Recomendacion", "Comprar", "Vender"
+o "Senal de compra". En su lugar, usa: "Evaluacion segun tu metodo",
+"Estado de consistencia", "Consistente / No consistente con tu metodo".
+ 
+No calcules ni menciones tamano de posicion (ficha completa, media ficha,
+NO ENTRAR como decision de tamano). Esa decision la toma el usuario, no
+el bot.
+ 
+Estructura la respuesta SIEMPRE en este orden exacto:
+ 
+1. FUNDAMENTAL
+   Pone verde o rojo junto al nombre del filtro (segun cuantas variables
+   internas aprueban), y debajo, cada variable individual con su propio
+   verde o rojo: P/E actual vs. historico, PEG, Moat, Razon de la caida.
+ 
+2. TECNICO
+   Mismo formato: verde o rojo general, y debajo cada variable individual:
+   RSI, MACD, Precio en soporte.
+ 
+3. KONCORDE/FLUJO
+   Mismo formato: verde o rojo general, y debajo cada variable individual:
+   Manos grandes comprando, Presion vendedora.
+ 
+4. Al final, siempre y en una linea aparte:
+   "Tu ICP para esta accion es: XX%"
+   (calcula el porcentaje como proporcion de variables individuales
+   aprobadas sobre el total evaluado)
+ 
+No agregues ninguna frase de conclusion, opinion o interpretacion
+despues del ICP. El checklist y el numero son la respuesta completa.
+La conclusion la saca el usuario, no vos.
+ 
+Si el usuario pide explicitamente el analisis detallado o el "por que"
+de algun filtro, ahi si podes explayarte explicando cada variable con
+el contexto y los datos que encontraste.
  
 REGLAS DE ANALISIS:
 - Cuando Seba pida analizar una accion, usa la busqueda web para obtener datos actuales.
@@ -95,14 +124,7 @@ REGLAS DE ANALISIS:
 - No inventes datos.
 - Si un dato no esta disponible, indicarlo claramente.
 - Analiza siempre Fundamental, Tecnico y Koncorde/Flujo.
-- Explica claramente que filtros estan alineados y cuales no.
-- Responde siempre en español, conciso y directo.
-- Usa emojis: ✅ ❌ ⚠️ 📊 💰.
-- Siempre termina con uno de estos veredictos exactos:
- 
-NO ENTRAR
-MEDIA FICHA ($5K)
-FICHA COMPLETA ($10K)`;
+- Responde siempre en español, conciso y directo.`;
  
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -237,4 +259,3 @@ export default async function handler(req, res) {
     });
   }
 }
- 
