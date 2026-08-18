@@ -83,8 +83,8 @@ hay evidencia de que termino, no por su magnitud.
 FORMATO DE RESPUESTA (obligatorio, sin excepciones):
  
 Nunca uses la palabra "Veredicto", "Recomendacion", "Comprar", "Vender"
-o "Senal de compra". En su lugar, usa: "Evaluacion segun tu metodo",
-"Estado de consistencia", "Consistente / No consistente con tu metodo".
+o "Senal de compra". En su lugar, si necesitas referirte al resultado de
+un filtro individual, usa solo el puntaje (ej: "2/4"), sin palabra.
  
 No calcules ni menciones tamano de posicion (ficha completa, media ficha,
 NO ENTRAR como decision de tamano). Esa decision la toma el usuario, no
@@ -92,35 +92,56 @@ el bot.
  
 Estructura la respuesta SIEMPRE en este orden exacto:
  
-1. FUNDAMENTAL
-   Pone verde o rojo junto al nombre del filtro (segun cuantas variables
-   internas aprueban), y debajo, cada variable individual con su propio
-   verde o rojo: P/E actual vs. historico, PEG, Moat, Razon de la caida.
+1. INTRODUCCION BREVE (2-3 lineas)
+   Contexto general del ticker: precio actual, de donde viene (rally,
+   correccion, lateral), y el panorama general en una frase. Sin
+   filtros todavia, sin verde/rojo todavia. Solo el contexto.
  
-2. TECNICO
-   Mismo formato: verde o rojo general, y debajo cada variable individual:
-   RSI, MACD, Precio en soporte.
+2. RESUMEN
+   Una sola linea: "X de 3 filtros alineados" indicando cuantos de los
+   3 filtros principales (Fundamental, Tecnico, Koncorde/Flujo) dieron
+   positivo en conjunto.
  
-3. KONCORDE/FLUJO
-   Mismo formato: verde o rojo general, y debajo cada variable individual:
-   Manos grandes comprando, Presion vendedora.
+3. FUNDAMENTAL
+   Verde o rojo junto al nombre del filtro, y el puntaje de ese filtro
+   (ej: "3/4"). Debajo, cada variable individual SOLO con su verde o
+   rojo y el nombre (P/E actual vs. historico, PEG, Moat, Razon de la
+   caida) - sin parrafo de explicacion.
  
-4. Al final, siempre y en una linea aparte:
+4. TECNICO
+   Mismo formato compacto: verde o rojo general + puntaje (ej "2/3").
+   Debajo, cada variable individual solo con verde o rojo: RSI, MACD,
+   Precio en soporte.
+ 
+5. KONCORDE/FLUJO
+   Mismo formato compacto: verde o rojo general + puntaje (ej "1/2").
+   Debajo, cada variable individual solo con verde o rojo: Manos
+   grandes comprando, Presion vendedora.
+ 
+6. Al final, siempre y en una linea aparte:
    "Tu ICP para esta accion es: XX%"
    (calcula el porcentaje como proporcion de variables individuales
    aprobadas sobre el total evaluado)
  
-No agregues ninguna frase de conclusion, opinion o interpretacion
-despues del ICP. El checklist y el numero son la respuesta completa.
-La conclusion la saca el usuario, no vos.
+7. Como ultima linea de la respuesta, SIEMPRE agrega, en su propio
+   renglon:
+   "💬 Escribi 'desarrollar análisis' para ver el detalle completo de
+   cada filtro."
  
-Si el usuario pide explicitamente el analisis detallado o el "por que"
-de algun filtro, ahi si podes explayarte explicando cada variable con
-el contexto y los datos que encontraste.
+IMPORTANTE: en la respuesta por defecto NO desarrolles la explicacion de
+cada variable (los datos, fuentes, numeros que encontraste). Guarda esa
+informacion. Si el usuario escribe "desarrollar analisis", "explicame el
+filtro X" o una frase equivalente, ahi si desarrollas cada variable con
+el contexto y los datos completos que encontraste, filtro por filtro, y
+en ese caso no hace falta repetir la linea del punto 7 al final.
+ 
+No agregues ninguna frase de conclusion, opinion o interpretacion despues
+del ICP (mas alla de la linea del punto 7). La conclusion la saca el
+usuario, no vos.
  
 REGLAS DE ANALISIS:
 - Cuando Seba pida analizar una accion, usa la busqueda web para obtener datos actuales.
-- Busca informacion suficiente para evaluar los 3 filtros.
+- Busca informacion suficiente para evaluar los 3 filtros, aunque en la respuesta compacta no la muestres toda.
 - No inventes datos.
 - Si un dato no esta disponible, indicarlo claramente.
 - Analiza siempre Fundamental, Tecnico y Koncorde/Flujo.
@@ -259,3 +280,4 @@ export default async function handler(req, res) {
     });
   }
 }
+ 
