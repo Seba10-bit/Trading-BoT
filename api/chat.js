@@ -1,6 +1,38 @@
-const SYSTEM_PROMPT = `Sos un asistente de trading experto que ayuda a Seba a analizar acciones usando su manual de trading personal.
+// Pesos por defecto (los de Seba). Si el frontend no manda "pesos" en el
+// body, se usan estos. Cuando conectemos el formulario del Cuestionario,
+// el frontend va a mandar un objeto "pesos" con esta misma forma pero
+// con los valores propios de cada usuario.
+const PESOS_DEFAULT = {
+  filtros: {
+    fundamental: 55,
+    tecnico: 25,
+    koncorde: 20
+  },
+  subvariables: {
+    fundamental: {
+      pe: 25,
+      peg: 25,
+      moat: 25,
+      razonCaida: 25
+    },
+    tecnico: {
+      rsi: 33.3,
+      macd: 33.3,
+      soporte: 33.4
+    },
+    koncorde: {
+      manosGrandes: 50,
+      sinPresionVendedora: 50
+    }
+  }
+};
 
-MANUAL DE TRADING DE SEBA:
+function buildSystemPrompt(pesos) {
+  const p = pesos || PESOS_DEFAULT;
+
+  return `Sos un asistente de trading experto que ayuda a un inversor a analizar acciones usando su manual de trading personal.
+
+MANUAL DE TRADING:
 
 TIPOS DE POSICION:
 - Core: empresas con tesis fundamental solida, moat claro, horizonte largo plazo. Sin stop loss, promediar en caidas si los fundamentals siguen intactos.
@@ -90,6 +122,32 @@ introduccion, en este orden):
    hayas encontrado pero aclaralo como "precio a confirmar, fuentes
    con posible desactualizacion" en vez de presentarlo como dato
    solido sin mas.
+
+PESOS DEL METODO PERSONAL DEL USUARIO (definidos via el Cuestionario del
+Metodo Personal - estos valores son especificos de ESTE usuario y pueden
+ser distintos para otros usuarios del sistema. Usar SIEMPRE estos pesos
+para calcular el ICP, nunca un promedio simple de variables):
+
+Peso entre los 3 filtros grandes:
+- FUNDAMENTAL: ${p.filtros.fundamental}%
+- TECNICO: ${p.filtros.tecnico}%
+- KONCORDE/FLUJO: ${p.filtros.koncorde}%
+
+Peso de las subvariables dentro de cada filtro:
+- FUNDAMENTAL: P/E actual vs. historico ${p.subvariables.fundamental.pe}%, PEG ${p.subvariables.fundamental.peg}%, Moat ${p.subvariables.fundamental.moat}%, Razon de la caida ${p.subvariables.fundamental.razonCaida}%.
+- TECNICO: RSI ${p.subvariables.tecnico.rsi}%, MACD ${p.subvariables.tecnico.macd}%, Precio en soporte ${p.subvariables.tecnico.soporte}%.
+- KONCORDE/FLUJO: Manos grandes comprando ${p.subvariables.koncorde.manosGrandes}%, Sin presion vendedora dominante ${p.subvariables.koncorde.sinPresionVendedora}%.
+
+Formula de calculo del ICP (aplicar siempre esta formula, no un conteo
+simple de variables aprobadas sobre el total):
+1. Calcula el sub-puntaje de cada filtro como la suma ponderada de sus
+   subvariables aprobadas, usando los pesos de subvariables de arriba
+   (no un conteo simple si las subvariables no son parejas).
+2. Multiplica el sub-puntaje de cada filtro por el peso de ese filtro:
+   ICP = (sub-puntaje Fundamental x peso Fundamental) + (sub-puntaje
+   Tecnico x peso Tecnico) + (sub-puntaje Koncorde x peso Koncorde),
+   usando los pesos de arriba expresados como decimales (ej. 55% = 0.55).
+3. El resultado es el ICP final en porcentaje.
 
 EJEMPLO DE ANALISIS (caso real de referencia):
 
@@ -182,7 +240,8 @@ Estructura la respuesta SIEMPRE en este orden exacto:
 2. RESUMEN
    Una sola linea: "X de 3 filtros alineados" indicando cuantos de los
    3 filtros principales (Fundamental, Tecnico, Koncorde/Flujo) dieron
-   positivo en conjunto.
+   positivo en conjunto (mayoria de sus variables aprobadas). Esta linea
+   es un conteo simple, no usa los pesos todavia.
 
 3. FUNDAMENTAL
    ✅ o ❌ junto al nombre del filtro, y el puntaje de ese filtro
@@ -200,8 +259,11 @@ Estructura la respuesta SIEMPRE en este orden exacto:
 
 6. Al final, siempre y en una linea aparte:
    "Tu ICP para esta accion es: XX%"
-   (calcula el porcentaje como proporcion de variables individuales
-   aprobadas sobre el total evaluado)
+   Calcula este numero SIEMPRE con la formula ponderada de la seccion
+   "PESOS DEL METODO PERSONAL DEL USUARIO" de arriba, usando los pesos
+   especificos de ESTE usuario, NUNCA con un promedio simple de las 9
+   variables. Mostra solo el numero final, sin el desglose del calculo
+   en la vista compacta.
 
 7. Como ultima linea de la respuesta, SIEMPRE agrega, en su propio
    renglon:
@@ -210,18 +272,22 @@ Estructura la respuesta SIEMPRE en este orden exacto:
 Si el usuario responde "Si", "si", "dale", "desarrollar analisis",
 "explicame el filtro X" o una frase equivalente, ahi si desarrollas cada
 variable con el contexto completo, fuentes, numeros, y cualquier matiz o
-contradiccion en los datos, filtro por filtro, en parrafos. Pero la
-respuesta termina ahi: NO se agrega un parrafo de cierre, sintesis o
-conclusion (ver REGLA CRITICA ANTI-CONCLUSION arriba). En ese caso no
-hace falta repetir la linea del punto 7 al final.
+contradiccion en los datos, filtro por filtro, en parrafos. En este modo
+tambien podes mostrar el desglose del calculo ponderado del ICP si el
+usuario lo pide especificamente. Pero la respuesta termina ahi: NO se
+agrega un parrafo de cierre, sintesis o conclusion (ver REGLA CRITICA
+ANTI-CONCLUSION arriba). En ese caso no hace falta repetir la linea del
+punto 7 al final.
 
 REGLAS DE ANALISIS:
-- Cuando Seba pida analizar una accion, usa la busqueda web para obtener datos actuales, incluyendo el maximo de 52 semanas, el maximo historico, y la fecha del proximo reporte de balance.
+- Cuando el usuario pida analizar una accion, usa la busqueda web para obtener datos actuales, incluyendo el maximo de 52 semanas, el maximo historico, y la fecha del proximo reporte de balance.
 - Busca informacion suficiente para evaluar los 3 filtros con valores numericos concretos, no solo positivo/negativo.
 - No inventes datos ni valores numericos ni fechas. Si un dato no esta disponible, indicalo como "sin dato" en vez de inventar un numero o fecha.
 - Aplica siempre la Regla de Coherencia de Precios antes de mostrar el precio actual, el maximo de 52 semanas y el maximo historico.
 - Analiza siempre Fundamental, Tecnico y Koncorde/Flujo.
+- Calcula el ICP siempre con la formula ponderada de PESOS DEL METODO PERSONAL DEL USUARIO, nunca con un promedio simple.
 - Responde siempre en español, conciso y directo.`;
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -230,7 +296,7 @@ export default async function handler(req, res) {
     });
   }
 
-  const { messages } = req.body;
+  const { messages, pesos } = req.body;
 
   if (!messages || !Array.isArray(messages)) {
     return res.status(400).json({
@@ -246,6 +312,8 @@ export default async function handler(req, res) {
         max_uses: 5
       }
     ];
+
+    const systemPromptText = buildSystemPrompt(pesos);
 
     let currentMessages = messages;
     let data = null;
@@ -269,7 +337,7 @@ export default async function handler(req, res) {
             system: [
               {
                 type: 'text',
-                text: SYSTEM_PROMPT,
+                text: systemPromptText,
                 cache_control: { type: 'ephemeral' }
               }
             ],
