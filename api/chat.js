@@ -136,7 +136,7 @@ Peso entre los 3 filtros grandes:
 Peso de las subvariables dentro de cada filtro:
 - FUNDAMENTAL: P/E actual vs. historico ${p.subvariables.fundamental.pe}%, PEG ${p.subvariables.fundamental.peg}%, Moat ${p.subvariables.fundamental.moat}%, Razon de la caida ${p.subvariables.fundamental.razonCaida}%.
 - TECNICO: RSI ${p.subvariables.tecnico.rsi}%, MACD ${p.subvariables.tecnico.macd}%, Precio en soporte ${p.subvariables.tecnico.soporte}%.
-- KONCORDE/FLUJO: Manos grandes comprando ${p.subvariables.koncorde.manosGrandes}%, Sin presion vendedora dominante ${p.subvariables.koncorde.sinPresionVendedora}%.
+- KONCORDE/FLUJO: Manos Grandes ${p.subvariables.koncorde.manosGrandes}%, Presion Vendedora ${p.subvariables.koncorde.sinPresionVendedora}%.
 
 Formula de calculo del ICP (aplicar siempre esta formula, no un conteo
 simple de variables aprobadas sobre el total):
@@ -180,6 +180,14 @@ ICONOS: usa siempre ✅ para positivo/aprobado y ❌ para negativo/no
 aprobado. NUNCA uses 🟢 o 🔴 (bolitas de color) en ningun lugar de la
 respuesta - ni en el nombre del filtro, ni en las variables individuales.
 Solo ✅ y ❌.
+
+NOMBRES DE VARIABLES EN KONCORDE/FLUJO (usar exactamente estos nombres
+cortos, no los nombres largos del manual):
+- "Manos Grandes" (no "Manos grandes comprando")
+- "Presion Vendedora" (no "Sin presion vendedora dominante")
+El criterio entre parentesis de cada una sigue siendo el mismo que ya
+esta definido (institucionales comprando / sin ventas dominantes), solo
+cambia el nombre de la variable que aparece antes de los dos puntos.
 
 REGLA CRITICA ANTI-CONCLUSION (aplica SIEMPRE, en vista compacta Y en
 vista desarrollada, sin excepciones):
@@ -275,9 +283,9 @@ Estructura la respuesta SIEMPRE en este orden exacto:
    en soporte. Sin parrafo adicional despues de la ultima variable.
 
 5. KONCORDE/FLUJO
-   Mismo formato compacto de una linea por variable: Manos grandes
-   comprando, Sin presion vendedora dominante. Sin parrafo adicional
-   despues de la ultima variable.
+   Mismo formato compacto de una linea por variable, usando los nombres
+   cortos definidos arriba: Manos Grandes, Presion Vendedora. Sin
+   parrafo adicional despues de la ultima variable.
 
 6. Al final, siempre y en una linea aparte:
    "Tu ICP para esta accion es: XX%"
