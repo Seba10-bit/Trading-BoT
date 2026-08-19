@@ -4,23 +4,23 @@ const RESPUESTAS_STORAGE_KEY = "trading_bot_cuestionario_v1";
 const PESOS_STORAGE_KEY = "trading_bot_pesos_v1";
 
 const RESPUESTAS_INICIALES = {
-  objetivo: "",
+  objetivo: [],
   objetivoOtro: "",
-  horizonte: "",
-  toleranciaRiesgo: "",
-  filosofia: "",
+  horizonte: [],
+  toleranciaRiesgo: [],
+  filosofia: [],
   inversorReferencia: "",
   pesoFundamental: "42",
   pesoTecnico: "30",
   pesoKoncorde: "25",
-  tipoPosicionDefault: "",
+  tipoPosicionDefault: [],
   stopLoss: "",
   takeProfit: "",
   motivosReconsiderar: [],
   capitalMaxPorActivo: "",
   posicionesSimultaneas: "",
-  origenIdeas: "",
-  fomoArrepentimiento: "",
+  origenIdeas: [],
+  fomoArrepentimiento: [],
 };
 
 function cargarRespuestasGuardadas() {
@@ -106,47 +106,8 @@ const Ayuda = ({ children }) => (
   <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 12, lineHeight: 1.5 }}>{children}</div>
 );
 
-function OpcionUnica({ opciones, valor, onChange }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
-      {opciones.map((op) => (
-        <label
-          key={op}
-          onClick={() => onChange(op)}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "10px 12px",
-            borderRadius: 10,
-            border: `1px solid ${valor === op ? "#2563eb" : "#1f2937"}`,
-            background: valor === op ? "rgba(37,99,235,0.12)" : "#111827",
-            cursor: "pointer",
-            fontSize: 13,
-            color: "#f1f5f9",
-          }}
-        >
-          <span
-            style={{
-              width: 16,
-              height: 16,
-              borderRadius: "50%",
-              border: `2px solid ${valor === op ? "#2563eb" : "#4b5563"}`,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
-            {valor === op && <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#2563eb" }} />}
-          </span>
-          {op}
-        </label>
-      ))}
-    </div>
-  );
-}
-
+// Todas las preguntas de opciones son multi-seleccion: el tester puede
+// marcar mas de una si siente que le representan varias a la vez.
 function OpcionMultiple({ opciones, valores, onChange }) {
   const toggle = (op) => {
     if (valores.includes(op)) onChange(valores.filter((v) => v !== op));
@@ -184,6 +145,7 @@ function OpcionMultiple({ opciones, valores, onChange }) {
                 justifyContent: "center",
                 flexShrink: 0,
                 background: activo ? "#2563eb" : "transparent",
+                fontSize: 11,
               }}
             >
               {activo && "✓"}
@@ -219,18 +181,18 @@ function CampoTexto({ valor, onChange, placeholder, tipo = "text" }) {
 }function PasoObjetivoHorizonte({ r, set }) {
   return (
     <>
-      <Etiqueta>¿Para qué estás invirtiendo?</Etiqueta>
-      <OpcionUnica
+      <Etiqueta>¿Para qué estás invirtiendo? (podés marcar más de una)</Etiqueta>
+      <OpcionMultiple
         opciones={["Generar un ingreso extra", "Hacer crecer el patrimonio a largo plazo", "Preparar el retiro / jubilación", "Especular / operar activamente", "Otro"]}
-        valor={r.objetivo}
+        valores={r.objetivo}
         onChange={(v) => set({ objetivo: v })}
       />
-      {r.objetivo === "Otro" && <CampoTexto valor={r.objetivoOtro} onChange={(v) => set({ objetivoOtro: v })} placeholder="Contanos cuál" />}
+      {r.objetivo.includes("Otro") && <CampoTexto valor={r.objetivoOtro} onChange={(v) => set({ objetivoOtro: v })} placeholder="Contanos cuál" />}
 
-      <Etiqueta>¿Cuál es tu horizonte de inversión principal?</Etiqueta>
-      <OpcionUnica
+      <Etiqueta>¿Cuál es tu horizonte de inversión? (podés marcar más de uno)</Etiqueta>
+      <OpcionMultiple
         opciones={["Corto plazo (días / semanas)", "Mediano plazo (meses)", "Largo plazo (años)", "Mixto (según el activo)"]}
-        valor={r.horizonte}
+        valores={r.horizonte}
         onChange={(v) => set({ horizonte: v })}
       />
     </>
@@ -241,9 +203,9 @@ function PasoRiesgo({ r, set }) {
   return (
     <>
       <Etiqueta>¿Cómo describirías tu tolerancia al riesgo?</Etiqueta>
-      <OpcionUnica
+      <OpcionMultiple
         opciones={["Baja — prefiero preservar capital", "Media — acepto volatilidad moderada", "Alta — busco crecimiento agresivo"]}
-        valor={r.toleranciaRiesgo}
+        valores={r.toleranciaRiesgo}
         onChange={(v) => set({ toleranciaRiesgo: v })}
       />
     </>
@@ -253,10 +215,10 @@ function PasoRiesgo({ r, set }) {
 function PasoFilosofia({ r, set }) {
   return (
     <>
-      <Etiqueta>¿Qué enfoque te representa mejor?</Etiqueta>
-      <OpcionUnica
+      <Etiqueta>¿Qué enfoque te representa mejor? (podés marcar más de uno)</Etiqueta>
+      <OpcionMultiple
         opciones={["Value / empresas sólidas y baratas", "Growth / crecimiento agresivo", "Dividendos / renta pasiva", "Técnico / momentum", "Mixto"]}
-        valor={r.filosofia}
+        valores={r.filosofia}
         onChange={(v) => set({ filosofia: v })}
       />
       <Etiqueta>Inversor de referencia (si tenés uno)</Etiqueta>
@@ -312,10 +274,10 @@ function PasoEntrada({ r, set }) {
   return (
     <>
       <Ayuda>El bot no recomienda comprar ni vender. Te devuelve un puntaje (ICP) para que decidas vos.</Ayuda>
-      <Etiqueta>Tipo de posición por defecto</Etiqueta>
-      <OpcionUnica
+      <Etiqueta>Tipo de posición por defecto (podés marcar más de uno)</Etiqueta>
+      <OpcionMultiple
         opciones={["Core (largo plazo, tolero volatilidad)", "Táctica (stop loss estricto)", "Depende del activo"]}
-        valor={r.tipoPosicionDefault}
+        valores={r.tipoPosicionDefault}
         onChange={(v) => set({ tipoPosicionDefault: v })}
       />
     </>
@@ -353,16 +315,16 @@ function PasoCapital({ r, set }) {
 function PasoFomo({ r, set }) {
   return (
     <>
-      <Etiqueta>¿De dónde suelen venir tus ideas de inversión?</Etiqueta>
-      <OpcionUnica
+      <Etiqueta>¿De dónde suelen venir tus ideas de inversión? (podés marcar más de una)</Etiqueta>
+      <OpcionMultiple
         opciones={["Investigación propia", "Recomendaciones / tips de terceros", "Redes sociales", "Noticias", "Mezcla de todo"]}
-        valor={r.origenIdeas}
+        valores={r.origenIdeas}
         onChange={(v) => set({ origenIdeas: v })}
       />
       <Etiqueta>¿Alguna vez entraste a una posición sin tesis propia y te arrepentiste?</Etiqueta>
-      <OpcionUnica
+      <OpcionMultiple
         opciones={["Sí, varias veces", "Alguna vez", "No, casi nunca"]}
-        valor={r.fomoArrepentimiento}
+        valores={r.fomoArrepentimiento}
         onChange={(v) => set({ fomoArrepentimiento: v })}
       />
     </>
@@ -410,6 +372,25 @@ function Cuestionario({ respuestasIniciales, onGuardar, onCancelar, mostrarCance
             <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: i <= paso ? "#2563eb" : "#1f2937" }} />
           ))}
         </div>
+
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            alignItems: "flex-start",
+            background: "rgba(37,99,235,0.1)",
+            border: "1px solid rgba(37,99,235,0.25)",
+            borderRadius: 10,
+            padding: "10px 12px",
+            marginBottom: 16,
+          }}
+        >
+          <span style={{ fontSize: 14 }}>💡</span>
+          <span style={{ fontSize: 11, color: "#93c5fd", lineHeight: 1.5 }}>
+            No hay respuestas correctas ni incorrectas. Cuanto más honesto seas, más útil va a ser el bot para vos. Podés marcar todas las opciones que te representen.
+          </span>
+        </div>
+
         <div style={{ fontSize: 16, fontWeight: 700, color: "#fff", marginBottom: 16 }}>{titulo}</div>
 
         <div style={{ flex: 1 }}>
