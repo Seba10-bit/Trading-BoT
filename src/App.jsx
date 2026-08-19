@@ -83,6 +83,36 @@ function guardarTodo(respuestas) {
   return pesos;
 }
 
+// Exige al menos una respuesta por paso antes de dejar avanzar. Sin
+// esto, un tester (o Seba probando rapido) puede saltar todo el
+// Cuestionario en blanco y el bot terminaria usando datos sin sentido.
+function pasoValido(index, r) {
+  switch (index) {
+    case 0:
+      return r.objetivo.length > 0 && r.horizonte.length > 0;
+    case 1:
+      return r.toleranciaRiesgo.length > 0;
+    case 2:
+      return r.filosofia.length > 0;
+    case 3: {
+      const f = Number(r.pesoFundamental) || 0;
+      const t = Number(r.pesoTecnico) || 0;
+      const k = Number(r.pesoKoncorde) || 0;
+      return f + t + k > 0;
+    }
+    case 4:
+      return r.tipoPosicionDefault.length > 0;
+    case 5:
+      return r.stopLoss !== "" && r.takeProfit !== "" && r.motivosReconsiderar.length > 0;
+    case 6:
+      return r.capitalMaxPorActivo !== "" && r.posicionesSimultaneas !== "";
+    case 7:
+      return r.origenIdeas.length > 0 && r.fomoArrepentimiento.length > 0;
+    default:
+      return true;
+  }
+}
+
 const TypingIndicator = () => (
   <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 16px" }}>
     <div style={{ display: "flex", gap: 4 }}>
@@ -345,20 +375,32 @@ const PASOS = [
 function Cuestionario({ respuestasIniciales, onGuardar, onCancelar, mostrarCancelar }) {
   const [paso, setPaso] = useState(0);
   const [r, setR] = useState(respuestasIniciales);
+  const [intentoAvanzar, setIntentoAvanzar] = useState(false);
 
   const set = (parcial) => setR((prev) => ({ ...prev, ...parcial }));
 
   const esUltimo = paso === PASOS.length - 1;
   const esPrimero = paso === 0;
   const { titulo, Componente } = PASOS[paso];
+  const valido = pasoValido(paso, r);
 
   const handleSiguiente = () => {
+    if (!valido) {
+      setIntentoAvanzar(true);
+      return;
+    }
+    setIntentoAvanzar(false);
     if (esUltimo) {
       const pesos = guardarTodo(r);
       onGuardar(pesos, r);
     } else {
       setPaso((p) => p + 1);
     }
+  };
+
+  const irAtras = () => {
+    setIntentoAvanzar(false);
+    setPaso((p) => p - 1);
   };
 
   return (
@@ -397,10 +439,16 @@ function Cuestionario({ respuestasIniciales, onGuardar, onCancelar, mostrarCance
           <Componente r={r} set={set} />
         </div>
 
+        {intentoAvanzar && !valido && (
+          <div style={{ fontSize: 12, color: "#f87171", marginBottom: 8, fontWeight: 600 }}>
+            ⚠️ Completá esta sección antes de continuar.
+          </div>
+        )}
+
         <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
           {!esPrimero && (
             <button
-              onClick={() => setPaso((p) => p - 1)}
+              onClick={irAtras}
               style={{ flex: 1, padding: "12px 0", borderRadius: 12, background: "#111827", color: "#d1d5db", border: "1px solid #1f2937", cursor: "pointer", fontSize: 14, fontWeight: 600 }}
             >
               Atrás
@@ -416,7 +464,18 @@ function Cuestionario({ respuestasIniciales, onGuardar, onCancelar, mostrarCance
           )}
           <button
             onClick={handleSiguiente}
-            style={{ flex: 2, padding: "12px 0", borderRadius: 12, background: "#2563eb", color: "#fff", border: "none", cursor: "pointer", fontSize: 14, fontWeight: 700 }}
+            style={{
+              flex: 2,
+              padding: "12px 0",
+              borderRadius: 12,
+              background: "#2563eb",
+              color: "#fff",
+              border: "none",
+              cursor: "pointer",
+              fontSize: 14,
+              fontWeight: 700,
+              opacity: valido ? 1 : 0.55,
+            }}
           >
             {esUltimo ? "Guardar mi método" : "Siguiente"}
           </button>
